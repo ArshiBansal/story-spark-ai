@@ -8,6 +8,12 @@ import { NotificationRouter } from "../app/modules/notification/notification.rou
 import { CommentRouter } from "../app/modules/comment/comment.router";
 import { AnalysisRouter } from "../app/modules/analysis/analysis.router";
 import { ReactionRouter } from "../app/modules/reaction/reaction.router";
+import { NewsletterRouter } from "../app/modules/newsletter/newsletter.route";
+
+
+
+// alongside the other routes:
+
 const router = express.Router();
 
 const modules = [
@@ -47,8 +53,11 @@ const modules = [
     path: "/reaction",
     router: ReactionRouter,
   },
+  {
+    path: "/newsletter",
+    router: NewsletterRouter,
+  },
 ];
-
 modules.forEach((route) => router.use(route.path, route.router));
 
 export const Routers = router;
