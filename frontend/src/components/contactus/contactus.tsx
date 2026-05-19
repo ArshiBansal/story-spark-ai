@@ -129,12 +129,12 @@ export default function Contact() {
       <div className="w-full max-w-5xl relative z-10">
         {/* Heading */}
         <div className="text-center mb-5 sm:mb-14">
-          <p className="text-yellow-400 uppercase tracking-[5px] sm:tracking-[7px] text-xs sm:text-sm mb-3 font-semibold">
+          <p className="text-blue-400 uppercase tracking-[5px] sm:tracking-[7px] text-xs sm:text-sm mb-3 font-semibold">
             GET IN TOUCH
           </p>
 
           <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-            Contact <span className="text-yellow-400">Me</span>
+            Contact <span className="text-blue-400">Me</span>
           </h2>
 
           <div className="w-24 h-1 bg-yellow-400 mx-auto mt-5 rounded-full" />
@@ -276,7 +276,7 @@ export default function Contact() {
               w-full
               py-4
               rounded-2xl
-              bg-yellow-400
+              bg-gray-400
               text-black
               font-bold
               text-sm
@@ -284,7 +284,7 @@ export default function Contact() {
               transition-all
               duration-300
               hover:scale-[1.01]
-              hover:bg-yellow-300
+              hover:bg-white
               disabled:opacity-50
               disabled:cursor-not-allowed
             "
