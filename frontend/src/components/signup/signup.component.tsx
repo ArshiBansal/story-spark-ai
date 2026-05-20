@@ -1,3 +1,4 @@
+import AuthLayout from "../auth/AuthLayout";
 import { useForm, SubmitHandler } from "react-hook-form";
 import SSInput from "../ui-component/ss-input/ss-input";
 import SSButton from "../ui-component/ss-button/ss-button";
@@ -151,94 +152,115 @@ const SignUpComponent = () => {
   };
 
   return (
-    <div className="bg-slate-700 text-white min-h-screen">
-      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-10 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <h2 className="text-center text-5xl text-indigo-300 font-bold">
-            STORY SPARK AI
-          </h2>
-          <h2 className="mt-4 text-center text-2xl/9 font-bold tracking-tight text-gray-400">
-            Sign up to your account
-          </h2>
+  <>
+    <AuthLayout
+      title="Create Account"
+      subtitle="Join StorySparkAI and begin your creative journey."
+    >
+      <div className="w-full space-y-6">
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-700"></div>
+          </div>
+
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 text-gray-400 font-semibold">
+              SIGN UP WITH EMAIL
+            </span>
+          </div>
         </div>
-        <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-sm">
-          {!showOtpField ? (
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-              <SSInput
-                label="Name"
-                name="name"
-                placeholder="Enter your name"
-                required={true}
-                icon="fas fa-user"
-                register={register}
-              />
-              <SSInput
-                label="Email address"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                required={true}
-                icon="fas fa-envelope"
-                register={register}
-              />
-              <SSInput
-                label="Password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                required={true}
-                icon="fas fa-lock"
-                register={register}
-              />
-              <p className="text-xs text-gray-500 -mt-2">
-                Use at least 8 characters with uppercase, lowercase, number,
-                and special character.
-              </p>
-              <SSInput
-                label="Confirm Password"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                required={true}
-                icon="fas fa-eye"
-                register={register}
-              />
-              <SSButton text="Sign Up" type="submit" isLoading={isBusy} />
-            </form>
-          ) : (
-            <div className="space-y-4">
-              <SSInput
-                label="OTP"
-                name="otp"
-                placeholder="Enter your OTP"
-                required={true}
-                icon="fas fa-key"
-                register={register}
-              />
-              <SSButton
-                text="Verify OTP"
-                type="button"
-                onClick={handleOtpValidation}
-                isLoading={isBusy}
-              />
-            </div>
-          )}
-          {!showOtpField && (
-            <p className="mt-4 text-center text-sm/6 text-gray-500">
-              Already have an account?{" "}
-              <a
-                href="/login"
-                className="font-semibold text-indigo-400 hover:text-indigo-300"
-              >
-                Sign in
-              </a>
+
+        {!showOtpField ? (
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+
+            <SSInput
+              label="Name"
+              name="name"
+              placeholder="Enter your name"
+              required={true}
+              icon="fas fa-user"
+              register={register}
+            />
+
+            <SSInput
+              label="Email address"
+              name="email"
+              type="email"
+              placeholder="Enter your email"
+              required={true}
+              icon="fas fa-envelope"
+              register={register}
+            />
+
+            <SSInput
+              label="Password"
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              required={true}
+              icon="fas fa-lock"
+              register={register}
+            />
+
+            <p className="text-xs text-gray-500 -mt-2">
+              Use at least 8 characters with uppercase, lowercase,
+              number, and special character.
             </p>
-          )}
-        </div>
+
+            <SSInput
+              label="Confirm Password"
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              required={true}
+              icon="fas fa-eye"
+              register={register}
+            />
+
+            <SSButton
+              text="Sign Up"
+              type="submit"
+              isLoading={isBusy}
+            />
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <SSInput
+              label="OTP"
+              name="otp"
+              placeholder="Enter your OTP"
+              required={true}
+              icon="fas fa-key"
+              register={register}
+            />
+
+            <SSButton
+              text="Verify OTP"
+              type="button"
+              onClick={handleOtpValidation}
+              isLoading={isBusy}
+            />
+          </div>
+        )}
+
+        {!showOtpField && (
+          <div className="text-center text-sm text-indigo-600">
+            <a
+              href="/login"
+              className="block text-custom hover:underline"
+            >
+              Already have an account? Sign In
+            </a>
+          </div>
+        )}
+
       </div>
-      <Toaster position="top-right" reverseOrder={false} />
-    </div>
-  );
+    </AuthLayout>
+
+    <Toaster position="top-right" reverseOrder={false} />
+  </>
+);
 };
 
 export default SignUpComponent;
