@@ -8,12 +8,8 @@ type Props = {
 
 const AuthLayout = ({ children, title, subtitle }: Props) => {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#050816] lg:flex-row">
-      {/* Background Glow Effects */}
-      <div className="absolute left-[-120px] top-[-120px] h-[320px] w-[320px] rounded-full bg-purple-500/10 blur-3xl"></div>
-
-      <div className="absolute bottom-[-120px] right-[-120px] h-[320px] w-[320px] rounded-full bg-blue-500/10 blur-3xl"></div>
-
+    <div className="flex min-h-screen flex-row">
+      
       {/* Left Branding Section */}
       <div className="relative flex w-full flex-col justify-center border-b border-zinc-800 bg-[#0B1120]/90 px-8 py-14 backdrop-blur-xl lg:min-h-screen lg:w-[45%] lg:border-b-0 lg:border-r lg:px-14">
         {/* Logo */}
@@ -23,22 +19,12 @@ const AuthLayout = ({ children, title, subtitle }: Props) => {
           </h1>
         </a>
 
-        {/* Badge */}
-        <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-2">
-          <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
-
-          <span className="text-sm font-medium text-indigo-300">
-            AI Powered Creative Platform
-          </span>
-        </div>
-
-        {/* Main Content */}
-        <div className="max-w-xl space-y-5">
-          <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl">
+        <div>
+          <h1 className="text-3xl text-gray-100 font-bold">
             {title}
           </h1>
 
-          <p className="max-w-lg text-base leading-relaxed text-gray-400 md:text-lg">
+          <p className="mt-2 text-gray-400">
             {subtitle}
           </p>
         </div>
@@ -60,8 +46,10 @@ const AuthLayout = ({ children, title, subtitle }: Props) => {
       </div>
 
       {/* Right Form Section */}
-      <div className="relative flex flex-1 items-center justify-center px-5 py-10 md:px-8 lg:px-12">
-        <div className="w-full max-w-md">{children}</div>
+      <div className="bg-black flex flex-1 items-center justify-center p-6 md:w-[65%] md:p-8">
+        <div className="w-full max-w-md py-8 md:py-0">
+          {children}
+        </div>
       </div>
     </div>
   );
