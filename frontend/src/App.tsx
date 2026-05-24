@@ -35,15 +35,18 @@ import ProfileComponent from "./components/dashboard/profile/profile.component";
 import PaymentComponent from "./components/home/pricing/payment.component";
 import Contact from "./components/contactus/contactus";
 import HelpCenterComponent from "./components/help_center/help_center.component";
-import ErrorBoundary from "./components/ErrorBoundary";
 import AboutUsComponent from "./components/footer/about-us.tsx";
 import CareerComponent from "./components/footer/career.tsx";
 // import ContactUsComponent from "./components/footer/contact-us.tsx";
 import BlogComponent from "./components/footer/blog.tsx";
+import PrivacyPolicy from "./components/footer/Privacy.tsx";
 // import HelpCenterComponent from "./components/footer/help-center.tsx";
 import GuidelinesComponent from "./components/footer/guidelines.tsx";
 import TemplatesComponent from "./components/templates/templates.component";
 import CommunityComponent from "./components/community/community.component";
+import ResourcesListComponent from "./components/community/resources_list.component";
+import ResourceDetailComponent from "./components/community/resource_detail.component";
+import MagicCursorComponent from "./components/magic-cursor/magic_cursor.component";
 const ProtectedRoute = ({
   element,
   allowedRoles,
@@ -78,6 +81,7 @@ function App() {
 
   return (
     <Router>
+      <MagicCursorComponent />
       <ScrollToTop />
       {/* Dark Mode Toggle Button */}
       {/* <div className="fixed top-4 right-4 z-50">
@@ -363,6 +367,14 @@ function App() {
             </RootLayout>
           }
         />
+              <Route
+        path="/privacy-policy"
+        element={
+          <RootLayout>
+            <PrivacyPolicy />
+          </RootLayout>
+        }
+      />
         <Route
           path="/help-center"
           element={
@@ -386,6 +398,42 @@ function App() {
               element={
                 <RootLayout>
                   <CommunityComponent />
+                </RootLayout>
+              }
+              allowedRoles={[
+                USER_ROLE.USER,
+                USER_ROLE.WRITER,
+                USER_ROLE.ADMIN,
+                USER_ROLE.SUPER_ADMIN,
+              ]}
+            />
+          }
+        />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute
+              element={
+                <RootLayout>
+                  <ResourcesListComponent />
+                </RootLayout>
+              }
+              allowedRoles={[
+                USER_ROLE.USER,
+                USER_ROLE.WRITER,
+                USER_ROLE.ADMIN,
+                USER_ROLE.SUPER_ADMIN,
+              ]}
+            />
+          }
+        />
+        <Route
+          path="/resources/:resourceName"
+          element={
+            <ProtectedRoute
+              element={
+                <RootLayout>
+                  <ResourceDetailComponent />
                 </RootLayout>
               }
               allowedRoles={[

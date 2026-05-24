@@ -66,8 +66,6 @@ const SignUpComponent = () => {
   const confirmPassword = watch("confirmPassword");
   const otp = watch("otp");
 
-  const passwordError = password ? getPasswordError(password) : "";
-
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     if (data) {
       const user = {
@@ -135,13 +133,13 @@ const SignUpComponent = () => {
         email: registerInfo.email,
         otp: enteredOtp,
       }).unwrap();
-      
+
       // Store the verification token returned from OTP verification
       if (otpResponse?.data?.verificationToken) {
         setVerificationToken(otpResponse.data.verificationToken);
-        
+
         // Now register user with verification token
-        const res = await registerUser({ 
+        const res = await registerUser({
           ...registerInfo,
           verificationToken: otpResponse.data.verificationToken,
         }).unwrap();
@@ -189,29 +187,29 @@ const SignUpComponent = () => {
           </div>
         </div>
 
-        {!showOtpField ? (
-          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-            <SSInput
-              label="Name"
-              name="name"
-              placeholder="Enter your name"
-              required={true}
-              icon="fas fa-user"
-              register={register}
-              validation={{
-                required: "Name is required",
-                minLength: {
-                  value: 8,
-                  message: "Name must be at least 8 characters",
-                },
-                pattern: {
-                  value: /^[A-Za-z0-9._]+$/,
-                  message:
-                    "Only letters, numbers, underscores, and dots are allowed",
-                },
-              }}
-              error={errors.name}
-            />
+          {!showOtpField ? (
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              <SSInput
+                label="Name"
+                name="name"
+                placeholder="Enter your name"
+                required={true}
+                icon="fas fa-user"
+                register={register}
+                validation={{
+                  required: "Name is required",
+                  minLength: {
+                    value: 8,
+                    message: "Name must be at least 8 characters",
+                  },
+                  pattern: {
+                    value: /^[A-Za-z0-9._]+$/,
+                    message:
+                      "Only letters, numbers, underscores, and dots are allowed",
+                  },
+                }}
+                error={errors.name}
+              />
 
             <SSInput
               label="Email address"
@@ -235,10 +233,10 @@ const SignUpComponent = () => {
               error={errors.password}
             />
 
-            <p className="text-xs text-gray-500 -mt-2">
-              Use at least 8 characters with uppercase, lowercase,
-              number, and special character.
-            </p>
+              <p className="text-xs text-gray-500 -mt-2">
+                Use at least 8 characters with uppercase, lowercase, number, and
+                special character.
+              </p>
 
             <SSInput
               label="Confirm Password"

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useParams } from "react-router-dom";
 import {
   useGetPostByIdQuery,
@@ -24,7 +24,7 @@ const PostDetailsComponent = () => {
   const { id } = useParams();
   const { data: post, isLoading } = useGetPostByIdQuery(id || "");
   const tag = post?.tag;
-  const { data: relatedPost } = useGetPostByTagQuery(tag || "");
+    const { data: relatedPost } = useGetPostByTagQuery({ tag: tag || "", excludeId: post?._id || "" });
   const [toggleReaction] = useToggleReactionMutation();
   const currentUser = getUserInfo();
   const authorId = post?.author?._id;
@@ -45,7 +45,7 @@ const PostDetailsComponent = () => {
     if (!authorId) return;
     try {
       await toggleFollow(authorId).unwrap();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update follow status");
     }
   };
@@ -58,6 +58,35 @@ const PostDetailsComponent = () => {
       console.error("Failed to toggle reaction", error);
       toast.error("You need to login to perform this action");
     }
+  };
+
+  const hasUserReacted = post?.reactions?.some((r) => {
+    const userId = r.userId;
+    const email =
+      typeof userId === "object" && userId !== null && "email" in userId
+        ? userId.email
+        : undefined;
+    return email === currentUser?.email;
+  });
+
+  const shareUrl = window.location.href;
+  const shareTitle = post?.title || "Check out this story!";
+
+  const handleTwitterShare = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleLinkedInShare = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleEmailShare = () => {
+    const subject = `Story Spark AI - ${shareTitle}`;
+    const body = `Check out this interesting story on Story Spark AI: "${shareTitle}"\n\nRead it here: ${shareUrl}`;
+    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
   };
 
   if (isLoading) {
@@ -130,20 +159,14 @@ const PostDetailsComponent = () => {
                 <button
                   onClick={handleLike}
                   className={`flex items-center space-x-2 transition-colors cursor-pointer ${
-                    post?.reactions?.some(
-                      (r: any) => r.userId?.email === currentUser?.email
-                    )
+                    hasUserReacted
                       ? "text-red-500 hover:text-red-400"
                       : "text-gray-600 hover:text-gray-400"
                   }`}
                 >
                   <i
                     className={`${
-                      post?.reactions?.some(
-                        (r: any) => r.userId?.email === currentUser?.email
-                      )
-                        ? "fas"
-                        : "far"
+                      hasUserReacted ? "fas" : "far"
                     } fa-heart`}
                   ></i>
                   <span>{post?.likesCount}</span>
@@ -156,15 +179,31 @@ const PostDetailsComponent = () => {
                   />
                 )}
               </div>
-              <div className="flex items-center space-x-4">
-                <button className="text-gray-600 hover:text-custom">
-                  <i className="fab fa-twitter"></i>
+              <div className="flex items-center space-x-3 bg-slate-800/40 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700/50 shadow-sm">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1 select-none">Share:</span>
+                <button
+                  id="share-twitter-btn"
+                  onClick={handleTwitterShare}
+                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 hover:border-blue-400 hover:bg-blue-500/10 text-slate-400 hover:text-blue-400 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
+                  aria-label="Share on Twitter"
+                >
+                  <i className="fab fa-twitter text-sm"></i>
                 </button>
-                <button className="text-gray-600 hover:text-custom">
-                  <i className="fab fa-linkedin"></i>
+                <button
+                  id="share-linkedin-btn"
+                  onClick={handleLinkedInShare}
+                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
+                  aria-label="Share on LinkedIn"
+                >
+                  <i className="fab fa-linkedin text-sm"></i>
                 </button>
-                <button className="text-gray-600 hover:text-custom">
-                  <i className="far fa-envelope"></i>
+                <button
+                  id="share-email-btn"
+                  onClick={handleEmailShare}
+                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 hover:border-purple-400 hover:bg-purple-500/10 text-slate-400 hover:text-purple-400 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
+                  aria-label="Share via Email"
+                >
+                  <i className="far fa-envelope text-sm"></i>
                 </button>
               </div>
             </div>
@@ -179,7 +218,7 @@ const PostDetailsComponent = () => {
               <h3 className="text-xl font-semibold mb-4 text-gray-300">
                 Related Stories
               </h3>
-              <RelatedStoriesComponent posts={relatedPost || []} />
+              <RelatedStoriesComponent posts={relatedPost || []} currentPostId={post?._id || ""} />
             </div>
           </div>
         </div>

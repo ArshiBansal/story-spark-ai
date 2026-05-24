@@ -24,7 +24,6 @@ const SSInput = <T extends FieldValues>({
   name,
   type = "text",
   placeholder,
-  required = false,
   icon,
   register,
   validation,

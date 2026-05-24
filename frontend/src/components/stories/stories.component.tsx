@@ -39,6 +39,7 @@ const [textareaValue, setTextareaValue] = useState<string>("");
 const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 const dropdownRef = useRef<HTMLDivElement>(null);
 const inputRef = useRef<HTMLTextAreaElement>(null);
+const activeGenerationRef = useRef<{ abort: () => void } | null>(null);
 const [guestRequestCount, setGuestRequestCount] = useState<number>(() =>
   parseInt(localStorage.getItem("guestRequestCount") || "0", 10),
 );
@@ -84,7 +85,17 @@ useEffect(() => {
   setValue("prompt", textareaValue);
 }, [textareaValue, setValue]);
 
+useEffect(() => {
+  return () => {
+    activeGenerationRef.current?.abort();
+  };
+}, []);
+
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    if (loading) {
+      return;
+    }
+
     if (!login && guestRequestCount >= 3) {
       setShowLimitModal(true);
       return;
@@ -112,9 +123,11 @@ useEffect(() => {
           : selectedLength === "long" ? 500
           : 250,
       };
-      const res = login
-        ? await generateModel(payload).unwrap()
-        : await generateFreeModel(payload).unwrap();
+      const generationRequest = login
+        ? generateModel(payload)
+        : generateFreeModel(payload);
+      activeGenerationRef.current = generationRequest;
+      const res = await generationRequest.unwrap();
       if (res) {
         toast.success(res.message);
         setStories(res.data as IStories[]);
@@ -128,11 +141,22 @@ useEffect(() => {
         }
       }
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const message = getErrorMessage(error);
+      if (message !== "Story generation was cancelled.") {
+        toast.error(message);
+      }
     } finally {
+      activeGenerationRef.current = null;
       setLoading(false);
     }
   };
+
+const handleCancelGeneration = () => {
+  activeGenerationRef.current?.abort();
+  activeGenerationRef.current = null;
+  setLoading(false);
+  toast("Story generation cancelled.");
+};
 
 const handleClearPrompt = () => {
   setTextareaValue("");
@@ -301,7 +325,7 @@ const handleClearPrompt = () => {
             const form = e.currentTarget.closest("form");
             if (form) form.requestSubmit();
           }
-        }}      
+        }}
         />
 
       {textareaValue.length > 0 && (
@@ -464,7 +488,7 @@ const handleClearPrompt = () => {
         </div>
       )}
 
-      {loading && <StoryGeneratingAnimation />}
+      {loading && <StoryGeneratingAnimation onCancel={handleCancelGeneration} />}
       <StoriesViewComponent
         stories={stories}
         isLogin={login}
