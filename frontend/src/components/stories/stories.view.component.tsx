@@ -5,6 +5,7 @@ import { useCreatePostMutation } from "../../redux/apis/post.api";
 import { useGetProfileInfoQuery } from "../../redux/apis/user.api";
 import jsPDF from "jspdf";
 import BookmarkButton from "../BookmarkButton";
+import AudioNarration from "../AudioNarration";
 import logo from "../../assets/logoNew.png";
 import StoryGeneratingAnimation from "../loading/story-generating-animation.component";
 
@@ -645,6 +646,8 @@ if (isLoading) {
             <div id="story-content" className="prose prose-invert max-w-none text-slate-300 leading-relaxed tracking-wide relative z-10">
               <p className="break-words">{selectedStory.content}</p>
             </div>
+            {/* Audio narration controls */}
+            <AudioNarration text={selectedStory.content} />
           </div>
           <div className="mt-7">
             <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-xl p-6 mb-8">
