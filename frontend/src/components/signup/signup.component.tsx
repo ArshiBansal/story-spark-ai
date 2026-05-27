@@ -1,8 +1,7 @@
-import AuthLayout from "../auth/AuthLayout";
 import { useForm, SubmitHandler } from "react-hook-form";
 import SSInput from "../ui-component/ss-input/ss-input";
 import SSButton from "../ui-component/ss-button/ss-button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { storeUserInfo } from "../../services/auth.service";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -43,6 +42,46 @@ const getPasswordError = (password: string) => {
   return "";
 };
 
+type StrengthLevel = "weak" | "medium" | "strong";
+
+const PASSWORD_STRENGTH_CONFIG: Record<
+  StrengthLevel,
+  { label: string; barColor: string; barWidth: string; textColor: string }
+> = {
+  weak: {
+    label: "Weak",
+    barColor: "bg-red-500",
+    barWidth: "w-1/3",
+    textColor: "text-red-400",
+  },
+  medium: {
+    label: "Medium",
+    barColor: "bg-yellow-400",
+    barWidth: "w-2/3",
+    textColor: "text-yellow-300",
+  },
+  strong: {
+    label: "Strong",
+    barColor: "bg-green-500",
+    barWidth: "w-full",
+    textColor: "text-green-400",
+  },
+};
+
+const getStrengthLevel = (passedChecks: number): StrengthLevel => {
+  if (passedChecks <= 2) return "weak";
+  if (passedChecks <= 4) return "medium";
+  return "strong";
+};
+
+const PASSWORD_REQUIREMENTS = [
+  { key: "length" as const, label: "Minimum 8 characters" },
+  { key: "uppercase" as const, label: "One uppercase letter" },
+  { key: "lowercase" as const, label: "One lowercase letter" },
+  { key: "number" as const, label: "One number" },
+  { key: "special" as const, label: "One special character" },
+];
+
 const SignUpComponent = () => {
   const navigate = useNavigate();
 
@@ -54,6 +93,7 @@ const SignUpComponent = () => {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<Inputs>({ mode: "onChange" });
 
@@ -61,10 +101,50 @@ const SignUpComponent = () => {
   const [showOtpField, setShowOtpField] = useState<boolean>(false);
   const [registerInfo, setRegisterInfo] = useState<IRegisterInfo>();
   const [expiredAt, setExpiredAt] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const password = watch("password");
   const confirmPassword = watch("confirmPassword");
   const otp = watch("otp");
+  const passwordChecks = {
+  length: password?.length >= 8,
+  uppercase: /[A-Z]/.test(password || ""),
+  lowercase: /[a-z]/.test(password || ""),
+  number: /[0-9]/.test(password || ""),
+  special: /[^A-Za-z0-9]/.test(password || ""),
+};
+
+const passedChecks =
+  Object.values(passwordChecks).filter(Boolean).length;
+
+const passwordStrength =
+  passedChecks <= 2
+    ? "Weak"
+    : passedChecks <= 4
+    ? "Medium"
+    : "Strong";
+
+const strengthColor =
+  passwordStrength === "Weak"
+    ? "bg-red-500"
+    : passwordStrength === "Medium"
+    ? "bg-yellow-400"
+    : "bg-green-500";
+
+const strengthWidth =
+  passwordStrength === "Weak"
+    ? "w-1/3"
+    : passwordStrength === "Medium"
+    ? "w-2/3"
+    : "w-full";
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     if (data) {
@@ -95,6 +175,7 @@ const SignUpComponent = () => {
           toast.success("OTP sent to your email");
           setRegisterInfo(user);
           setShowOtpField(true);
+          setCooldown(60);
         }
       } catch (error) {
         const message =
@@ -169,26 +250,57 @@ const SignUpComponent = () => {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (cooldown > 0 || isBusy) return;
+    if (!registerInfo) {
+      toast.error("Something went wrong. Please restart the process.");
+      return;
+    }
+    setIsBusy(true);
+    try {
+      const otpPayload = {
+        name: registerInfo.name,
+        email: registerInfo.email,
+      };
+      const res = await emailVerify({ ...otpPayload }).unwrap();
+      if (res?.data) {
+        const { expiresAt } = res.data;
+        setExpiredAt(new Date(expiresAt).getTime());
+        toast.success("OTP resent successfully!");
+        setValue("otp", "");
+        setCooldown(60);
+      }
+    } catch (error) {
+      const message =
+        (error as { data?: Array<{ message?: string }> })?.data?.[0]
+          ?.message || "Failed to resend OTP. Please try again.";
+      toast.error(message);
+      console.log("resend error: ", error);
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   return (
-  <>
-    <AuthLayout
-      title="Create Account"
-      subtitle="Join StorySparkAI and begin your creative journey."
-    >
-      <div className="w-full space-y-6">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-700"></div>
+    <>
+      <AuthLayout
+        title="Create Account"
+        subtitle="Join StorySparkAI and begin your creative journey."
+      >
+        <div className="w-full space-y-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 text-gray-400 font-semibold">
+                SIGN UP WITH EMAIL
+              </span>
+            </div>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 text-gray-400 font-semibold">
-              SIGN UP WITH EMAIL
-            </span>
-          </div>
-        </div>
 
           {!showOtpField ? (
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
               <SSInput
                 label="Name"
                 name="name"
@@ -198,10 +310,10 @@ const SignUpComponent = () => {
                 register={register}
                 validation={{
                   required: "Name is required",
-                  minLength: {
-                    value: 8,
-                    message: "Name must be at least 8 characters",
-                  },
+                minLength: {
+                value: 2,
+                message: "Name must be at least 2 characters",
+                },
                   pattern: {
                     value: /^[A-Za-z0-9._]+$/,
                     message:
@@ -233,10 +345,67 @@ const SignUpComponent = () => {
               error={errors.password}
             />
 
-              <p className="text-xs text-gray-500 -mt-2">
-                Use at least 8 characters with uppercase, lowercase, number, and
-                special character.
-              </p>
+              <div className="space-y-3 -mt-2">
+  <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+    <div
+      className={`h-full transition-all duration-300 ${strengthColor} ${strengthWidth}`}
+    ></div>
+  </div>
+
+  <p
+    className={`text-sm font-medium ${
+      passwordStrength === "Weak"
+        ? "text-red-400"
+        : passwordStrength === "Medium"
+        ? "text-yellow-300"
+        : "text-green-400"
+    }`}
+  >
+    {passwordStrength} Password
+  </p>
+
+  <ul className="space-y-1 text-xs">
+    <li
+      className={
+        passwordChecks.length ? "text-green-400" : "text-red-400"
+      }
+    >
+      {passwordChecks.length ? "✅" : "❌"} Minimum 8 characters
+    </li>
+
+    <li
+      className={
+        passwordChecks.uppercase ? "text-green-400" : "text-red-400"
+      }
+    >
+      {passwordChecks.uppercase ? "✅" : "❌"} One uppercase letter
+    </li>
+
+    <li
+      className={
+        passwordChecks.lowercase ? "text-green-400" : "text-red-400"
+      }
+    >
+      {passwordChecks.lowercase ? "✅" : "❌"} One lowercase letter
+    </li>
+
+    <li
+      className={
+        passwordChecks.number ? "text-green-400" : "text-red-400"
+      }
+    >
+      {passwordChecks.number ? "✅" : "❌"} One number
+    </li>
+
+    <li
+      className={
+        passwordChecks.special ? "text-green-400" : "text-red-400"
+      }
+    >
+      {passwordChecks.special ? "✅" : "❌"} One special character
+    </li>
+  </ul>
+</div>
 
             <SSInput
               label="Confirm Password"
@@ -249,49 +418,41 @@ const SignUpComponent = () => {
               error={errors.confirmPassword}
             />
 
-            <SSButton
-              text="Sign Up"
-              type="submit"
-              isLoading={isBusy}
-            />
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <SSInput
-              label="OTP"
-              name="otp"
-              placeholder="Enter your OTP"
-              required={true}
-              icon="fas fa-key"
-              register={register}
-            />
+              <SSButton text="Sign Up" type="submit" isLoading={isBusy} />
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <SSInput
+                label="OTP"
+                name="otp"
+                placeholder="Enter your OTP"
+                required={true}
+                icon="fas fa-key"
+                register={register}
+              />
 
-            <SSButton
-              text="Verify OTP"
-              type="button"
-              onClick={handleOtpValidation}
-              isLoading={isBusy}
-            />
-          </div>
-        )}
+              <SSButton
+                text="Verify OTP"
+                type="button"
+                onClick={handleOtpValidation}
+                isLoading={isBusy}
+              />
+            </div>
+          )}
 
-        {!showOtpField && (
-          <div className="text-center text-sm text-indigo-600">
-            <a
-              href="/login"
-              className="block text-custom hover:underline"
-            >
-              Already have an account? Sign In
-            </a>
-          </div>
-        )}
+          {!showOtpField && (
+            <div className="text-center text-sm text-indigo-600">
+              <a href="/login" className="block text-custom hover:underline">
+                Already have an account? Sign In
+              </a>
+            </div>
+          )}
+        </div>
+      </AuthLayout>
 
-      </div>
-    </AuthLayout>
-
-    <Toaster position="top-right" reverseOrder={false} />
-  </>
-);
+      <Toaster position="top-right" reverseOrder={false} />
+    </>
+  );
 };
 
 export default SignUpComponent;
