@@ -753,13 +753,13 @@ ${content}
 
   const isNarrationActive = narrationState !== "idle";
 
-if (isLoading) {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <StoryGeneratingAnimation />
-    </div>
-  );
-}
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <StoryGeneratingAnimation />
+      </div>
+    );
+  }
   if (!selectedStory) {
     return null;
   }
