@@ -97,7 +97,76 @@ const NavListComponent: React.FC = () => {
           {/* Navigation Links */}
           <div className="hidden lg:flex flex-1 items-center justify-center space-x-1.5 xl:space-x-3 px-4">
             <NavLink to="/" end className={({ isActive }) => getLinkClass(isActive)}>
-              {({ isActive }) => (
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                    HOME
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/explore" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                    EXPLORE
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/story-inspiration" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                    INSPIRING STORIES
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/analytics" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                     ANALYTICS
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/collab" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                     COLLAB
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/contact-us" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                    CONTACT US
+                  </>
+                )}
+              </NavLink>
+              <NavLink to="/community" className={({ isActive }) => getLinkClass(isActive)}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                    )}
+                    COMMUNITY
+                  </>
+                )}
+              </NavLink>
+              {isLogin && (
                 <>
                   {isActive && (
                     <span className="w-1.5 h-1.5 bg-custom rounded-full mr-1.5 animate-pulse shadow-[0_0_8px_#3b82f6]" />
@@ -217,12 +286,12 @@ const NavListComponent: React.FC = () => {
               ) : (
                 <>
                   <Link to="/login">
-                    <button className="inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-sm font-medium leading-tight text-slate-600 transition-all duration-300 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white">
+                    <button className="px-4 py-2 font-medium cursor-pointer rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-300">
                       LOGIN
                     </button>
                   </Link>
                   <Link to="/signup">
-                    <button className="inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-sm font-medium leading-tight text-slate-600 transition-all duration-300 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white">
+                    <button className="px-4 py-2 font-medium cursor-pointer rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all duration-300">
                       SIGN UP
                     </button>
                   </Link>

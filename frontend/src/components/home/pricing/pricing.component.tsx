@@ -58,6 +58,13 @@ const PricingComponent = () => {
   const navigate = useNavigate();
 
   return (
+    <section className="story-section" id="pricing-section">
+      <div className="story-page-shell">
+      <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-12">
+        <h2 className="story-section-heading">
+          Simple, Transparent Pricing
+        </h2>
+        <p className="story-section-copy mt-4">
     <section className="mb-16 py-12" id="pricing-section">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -68,6 +75,7 @@ const PricingComponent = () => {
           Choose the plan that best fits your needs
         </p>
       </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6">
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
         {pricingPlans.map((plan, index) => (
@@ -75,6 +83,11 @@ const PricingComponent = () => {
             key={index}
             className={`
               motion-card
+              story-panel
+              p-8
+              rounded-lg
+              cursor-pointer
+              hover:border-indigo-400/50
               relative
               p-8
               rounded-2xl
@@ -90,10 +103,19 @@ const PricingComponent = () => {
             `}
           >
             {plan.highlight && (
+              <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-lg bg-indigo-600 px-3 py-1 text-sm font-semibold text-white">
               <div className="absolute top-0 right-0 bg-indigo-600 text-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-bl-xl rounded-tr-2xl shadow-sm">
                 Popular
               </div>
             )}
+            <h3 className="mb-2 text-xl font-bold text-slate-100">
+              {plan.title}
+            </h3>
+            <div className="mb-4">
+              <span className="text-4xl font-extrabold text-slate-50">{plan.price}</span>
+              <span className="text-slate-500">{plan.duration}</span>
+            </div>
+            <ul className="mb-8 space-y-3 text-slate-400">
 
             {/* Title */}
             <h3 className="text-xl font-bold mb-2 text-slate-800 dark:text-slate-200">
@@ -124,6 +146,11 @@ const PricingComponent = () => {
 
             {/* CTA */}
             <button
+              className={`motion-cta mt-6 block w-full rounded-lg px-4 py-3 text-center font-semibold shadow-lg ${plan.buttonStyle}`}
+              onClick={() => {
+                navigate(plan.linkto);
+              }}
+              className={`motion-cta mt-6 block w-full text-center font-medium py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 ${plan.buttonStyle}`}
               className={`motion-cta mt-8 block w-full text-center font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer ${plan.buttonStyle}`}
               onClick={() => navigate(plan.linkto)}
             >
@@ -131,6 +158,7 @@ const PricingComponent = () => {
             </button>
           </div>
         ))}
+      </div>
       </div>
     </section>
   );
