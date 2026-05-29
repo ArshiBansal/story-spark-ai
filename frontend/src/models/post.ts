@@ -40,6 +40,8 @@ export interface Post {
   imageURL: string;
   topic: Topic[];
   language?: string;
+  emotions?: string[];
+  genre?: string;
   author: Author;
   likesCount: number;
   commentsCount: number;
