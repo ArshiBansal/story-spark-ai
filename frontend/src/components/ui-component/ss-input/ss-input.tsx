@@ -76,8 +76,8 @@ const SSInput = <T extends FieldValues>({
           id={name}
           className={`w-full pl-8 pr-10 py-1.5 text-base text-gray-200 border rounded-md sm:text-sm ${
           error
-          ? "border-red-500 outline-red-500"
-          : "border-gray-300 outline-gray-300 focus:outline-indigo-600"
+          ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-red-500"
+          : "border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:focus:border-blue-500"
           }`}          placeholder={placeholder}
           {...register(name, validation)}
         />
@@ -88,6 +88,8 @@ const SSInput = <T extends FieldValues>({
     type="button"
     onClick={() => setShowPassword(!showPassword)}
     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500"
+    aria-label={showPassword ? "Hide password" : "Show password"}
+    title={showPassword ? "Hide password" : "Show password"}
   >
     <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
   </button>
