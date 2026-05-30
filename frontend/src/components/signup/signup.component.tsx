@@ -279,22 +279,41 @@ const strengthWidth =
   };
 
   return (
-    <>
-      <AuthLayout
-        title="Create Account"
-        subtitle="Join StorySparkAI and begin your creative journey."
-      >
-        <div className="w-full space-y-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700"></div>
+    <div className="min-h-[calc(100dvh-4.5rem)] bg-slate-900 text-slate-100 flex items-center justify-center relative overflow-hidden px-4 py-8">
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="flex w-full max-w-md flex-col justify-center py-12 relative z-10">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8">
+          <h2 className="text-center text-4xl sm:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 drop-shadow-sm">
+            STORY SPARK AI
+          </h2>
+        </div>
+
+        <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 sm:p-10 shadow-2xl">
+          <h3 className="text-center text-2xl font-bold tracking-tight text-slate-200">
+            {showOtpField ? "Verify Your Email" : "Create Account"}
+          </h3>
+
+          {!showOtpField && (
+            <p className="mt-2 mb-6 text-center text-sm text-slate-400">
+              Join StorySparkAI and begin your creative journey.
+            </p>
+          )}
+
+          {!showOtpField && (
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700/50"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-800/60 text-slate-400 font-semibold">
+                  SIGN UP WITH EMAIL
+                </span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 text-gray-400 font-semibold">
-                SIGN UP WITH EMAIL
-              </span>
-            </div>
-          </div>
+          )}
 
           {!showOtpField ? (
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -303,8 +322,9 @@ const strengthWidth =
                 name="name"
                 placeholder="Enter your name"
                 required={true}
-                icon="fas fa-user"
+                icon="fi fi-rr-user"
                 register={register}
+                autoComplete="name"
                 validation={{
                   required: "Name is required",
                 minLength: {
@@ -320,28 +340,29 @@ const strengthWidth =
                 error={errors.name}
               />
 
-            <SSInput
-              label="Email address"
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              required={true}
-              icon="fas fa-envelope"
-              register={register}
-              error={errors.email}
-            />
+              <SSInput
+                label="Email address"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                required={true}
+                icon="fas fa-envelope"
+                register={register}
+                error={errors.email}
+              />
 
-            <SSInput
-              label="Password"
-              name="password"
-              type="password"
-              placeholder="Enter your password"
-              required={true}
-              icon="fas fa-lock"
-              register={register}
-              error={errors.password}
-            />
+              <SSInput
+                label="Password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                required={true}
+                icon="fas fa-lock"
+                register={register}
+                error={errors.password}
+              />
 
+              {password?.length > 0 && (
               <div className="space-y-3 -mt-2">
   <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
     <div
@@ -361,59 +382,33 @@ const strengthWidth =
     {passwordStrength} Password
   </p>
 
-  <ul className="space-y-1 text-xs">
-    <li
-      className={
-        passwordChecks.length ? "text-green-400" : "text-red-400"
-      }
-    >
-      {passwordChecks.length ? "✅" : "❌"} Minimum 8 characters
-    </li>
+                <ul className="space-y-1 text-xs">
+                  {PASSWORD_REQUIREMENTS.map(({ key, label }) => {
+                    const met = passwordChecks[key];
+                    return (
+                      <li
+                        key={key}
+                        className={met ? "text-green-400" : "text-red-400"}
+                        aria-label={`${label}: ${met ? "met" : "not met"}`}
+                      >
+                        <span aria-hidden="true">{met ? "✅" : "❌"}</span>{" "}
+                        {label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
 
-    <li
-      className={
-        passwordChecks.uppercase ? "text-green-400" : "text-red-400"
-      }
-    >
-      {passwordChecks.uppercase ? "✅" : "❌"} One uppercase letter
-    </li>
-
-    <li
-      className={
-        passwordChecks.lowercase ? "text-green-400" : "text-red-400"
-      }
-    >
-      {passwordChecks.lowercase ? "✅" : "❌"} One lowercase letter
-    </li>
-
-    <li
-      className={
-        passwordChecks.number ? "text-green-400" : "text-red-400"
-      }
-    >
-      {passwordChecks.number ? "✅" : "❌"} One number
-    </li>
-
-    <li
-      className={
-        passwordChecks.special ? "text-green-400" : "text-red-400"
-      }
-    >
-      {passwordChecks.special ? "✅" : "❌"} One special character
-    </li>
-  </ul>
-</div>
-
-            <SSInput
-              label="Confirm Password"
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm your password"
-              required={true}
-              icon="fas fa-eye"
-              register={register}
-              error={errors.confirmPassword}
-            />
+              <SSInput
+                label="Confirm Password"
+                name="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                required={true}
+                icon="fas fa-eye"
+                register={register}
+                error={errors.confirmPassword}
+              />
 
               <SSButton text="Sign Up" type="submit" isLoading={isBusy} />
             </form>
@@ -424,8 +419,24 @@ const strengthWidth =
                 name="otp"
                 placeholder="Enter your OTP"
                 required={true}
-                icon="fas fa-key"
+                icon="fi fi-rr-key"
                 register={register}
+                validation={{
+                  required: "Please enter OTP",
+                  minLength: {
+                    value: 6,
+                    message: "OTP must be 6 digits",
+                  },
+                  maxLength: {
+                    value: 6,
+                    message: "OTP must be 6 digits",
+                  },
+                  pattern: {
+                    value: /^[0-9]{6}$/,
+                    message: "OTP must contain only numbers",
+                  },
+                }}
+                error={errors.otp}
               />
 
               <SSButton
