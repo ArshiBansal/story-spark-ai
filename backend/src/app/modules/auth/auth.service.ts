@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
-import { Secret } from "jsonwebtoken";
+import jwt, { Secret } from "jsonwebtoken";
+import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import { AuthModel } from "./auth.interface";
 import { User } from "../user/user.model";
@@ -10,10 +11,47 @@ import config from "../../../config";
 import ApiError from "../../../errors/api_error";
 import { IUser } from "../user/user.interface";
 import { OTPModel } from "../verify_email/otp.model";
+import { RefreshSession } from "./refresh_session.model";
 import { VerifyEmailService } from "../verify_email/verify_email.service";
 import { GamificationService } from "../gamification/gamification.service";
 
 const googleClient = new OAuth2Client(config.google_client_id);
+
+// Claims embedded in every issued token. tokenVersion enables global session
+// revocation (bumped on password change/reset and on refresh-token reuse).
+const buildClaims = (user: any) => ({
+  _id: user._id,
+  email: user.email,
+  role: user.role,
+  subscriptionType: user.subscriptionType,
+  name: user.name,
+  postsCount: user.postsCount,
+  tokenVersion: user.tokenVersion ?? 0,
+});
+
+const issueAccessToken = (user: any): string =>
+  JwtHalers.createToken(
+    buildClaims(user),
+    config.jwt.secret as Secret,
+    config.jwt.expires_in as string
+  );
+
+// Issues a refresh token carrying a unique jti and records a session for it so
+// the token can be rotated and reuse can be detected.
+const issueRefreshToken = async (user: any): Promise<string> => {
+  const jti = crypto.randomBytes(16).toString("hex");
+  const token = JwtHalers.createToken(
+    { ...buildClaims(user), jti },
+    config.jwt.refresh_secret as Secret,
+    config.jwt.refresh_expires_in as string
+  );
+  const decoded = jwt.decode(token) as { exp?: number } | null;
+  const expiresAt = decoded?.exp
+    ? new Date(decoded.exp * 1000)
+    : new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
+  await RefreshSession.create({ jti, userId: user._id, expiresAt });
+  return token;
+};
 
 const login = async (payload: AuthModel) => {
   const { email: userEmail, password } = payload;
@@ -31,20 +69,11 @@ const login = async (payload: AuthModel) => {
   if (!match) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Password is not valid!");
   }
-  const { _id, email, role, subscriptionType, name, postsCount, tokenVersion } =
-    isExistUser;
-  const accessToken = JwtHalers.createToken(
-    { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-    config.jwt.secret as Secret,
-    config.jwt.expires_in as string
-  );
-  const refreshToken = JwtHalers.createToken(
-    { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-    config.jwt.refresh_secret as Secret,
-    config.jwt.refresh_expires_in as string
-  );
 
-  GamificationService.updateDailyStreak(String(_id)).catch(console.error);
+  const accessToken = issueAccessToken(isExistUser);
+  const refreshToken = await issueRefreshToken(isExistUser);
+
+  GamificationService.updateDailyStreak(String(isExistUser._id)).catch(console.error);
 
   return {
     accessToken,
@@ -95,22 +124,12 @@ const register = async (payload: IUser & { verificationToken?: string; confirmPa
   
   const { verificationToken: _, ...userPayload } = payload;
   const result = await User.create(userPayload);
-  
+
   // Clean up OTP record after successful registration
   await OTPModel.deleteOne({ email: userEmail });
-  
-  const { _id, email, role, subscriptionType, name, postsCount, tokenVersion } =
-    result;
-  const accessToken = JwtHalers.createToken(
-    { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-    config.jwt.secret as Secret,
-    config.jwt.expires_in as string
-  );
-  const refreshToken = JwtHalers.createToken(
-    { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-    config.jwt.refresh_secret as Secret,
-    config.jwt.refresh_expires_in as string
-  );
+
+  const accessToken = issueAccessToken(result);
+  const refreshToken = await issueRefreshToken(result);
   return {
     accessToken,
     refreshToken,
@@ -118,6 +137,10 @@ const register = async (payload: IUser & { verificationToken?: string; confirmPa
 };
 
 const refreshToken = async (token: string) => {
+  if (!token) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "No refresh token provided");
+  }
+
   let verifiedToken = null;
   try {
     verifiedToken = JwtHalers.verifyToken(
@@ -129,6 +152,7 @@ const refreshToken = async (token: string) => {
   }
 
   const { email: userEmail } = verifiedToken;
+  const jti = (verifiedToken as any).jti as string | undefined;
   const user = await User.findOne({ email: userEmail });
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found!");
@@ -141,16 +165,64 @@ const refreshToken = async (token: string) => {
     );
   }
 
-  const { _id, email, role, subscriptionType, name, postsCount, tokenVersion } =
-    user;
-  const newAccessToken = JwtHalers.createToken(
-    { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-    config.jwt.secret as Secret,
-    config.jwt.expires_in as string
+  if (!jti) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid refresh token");
+  }
+
+  const session = await RefreshSession.findOne({ jti });
+  if (!session || session.revoked) {
+    throw new ApiError(
+      httpStatus.UNAUTHORIZED,
+      "Invalid or expired refresh token"
+    );
+  }
+
+  // A used token presented again means the token was stolen and replayed.
+  // Revoke the whole family and bump tokenVersion to kill access tokens too.
+  if (session.used) {
+    await RefreshSession.updateMany({ userId: user._id }, { revoked: true });
+    await User.updateOne({ _id: user._id }, { $inc: { tokenVersion: 1 } });
+    throw new ApiError(
+      httpStatus.UNAUTHORIZED,
+      "Refresh token reuse detected. Please sign in again."
+    );
+  }
+
+  // Atomically claim the token so only one concurrent request can rotate it.
+  const claimed = await RefreshSession.findOneAndUpdate(
+    { jti, used: false, revoked: false },
+    { used: true },
+    { new: true }
   );
+  if (!claimed) {
+    throw new ApiError(
+      httpStatus.UNAUTHORIZED,
+      "Invalid or expired refresh token"
+    );
+  }
+
+  const accessToken = issueAccessToken(user);
+  const newRefreshToken = await issueRefreshToken(user);
   return {
-    accessToken: newAccessToken,
+    accessToken,
+    refreshToken: newRefreshToken,
   };
+};
+
+const logout = async (token?: string) => {
+  if (!token) return;
+  try {
+    const verified = JwtHalers.verifyToken(
+      token,
+      config.jwt.refresh_secret as Secret
+    );
+    const jti = (verified as any).jti as string | undefined;
+    if (jti) {
+      await RefreshSession.updateOne({ jti }, { revoked: true });
+    }
+  } catch (error) {
+    // Ignore invalid tokens on logout; the cookie is cleared either way.
+  }
 };
 
 const googleLogin = async (payload: { token: string }) => {
@@ -195,20 +267,10 @@ const googleLogin = async (payload: { token: string }) => {
       user = await User.create(newUser);
     }
 
-    const { _id, role, subscriptionType, postsCount, name, tokenVersion } =
-      user;
-    const accessToken = JwtHalers.createToken(
-      { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-      config.jwt.secret as Secret,
-      config.jwt.expires_in as string
-    );
-    const refreshTokenData = JwtHalers.createToken(
-      { _id, email, role, subscriptionType, name, postsCount, tokenVersion },
-      config.jwt.refresh_secret as Secret,
-      config.jwt.refresh_expires_in as string
-    );
+    const accessToken = issueAccessToken(user);
+    const refreshTokenData = await issueRefreshToken(user);
 
-    GamificationService.updateDailyStreak(String(_id)).catch(console.error);
+    GamificationService.updateDailyStreak(String(user._id)).catch(console.error);
 
     return {
       accessToken,
@@ -336,25 +398,19 @@ const resetPassword = async (payload: {
     );
   }
 
-  // Update user password. Pre-save hook hashes it.
+  // Update user password and bump tokenVersion so every previously issued
+  // session is invalidated, then revoke any outstanding refresh sessions.
   user.password = password;
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
   await user.save();
+  await RefreshSession.updateMany({ userId: user._id }, { revoked: true });
 
   // Clean up OTP record
   await OTPModel.deleteOne({ email });
 
-  // Generate JWT tokens for auto-login
-  const { _id, role, subscriptionType, name, postsCount } = user;
-  const accessToken = JwtHalers.createToken(
-    { _id, email: user.email, role, subscriptionType, name, postsCount },
-    config.jwt.secret as Secret,
-    config.jwt.expires_in as string
-  );
-  const refreshToken = JwtHalers.createToken(
-    { _id, email: user.email, role, subscriptionType, name, postsCount },
-    config.jwt.refresh_secret as Secret,
-    config.jwt.refresh_expires_in as string
-  );
+  // Generate JWT tokens for auto-login with the new tokenVersion.
+  const accessToken = issueAccessToken(user);
+  const refreshToken = await issueRefreshToken(user);
 
   return {
     accessToken,
@@ -366,6 +422,7 @@ export const AuthService = {
   login,
   register,
   refreshToken,
+  logout,
   googleLogin,
   changePassword,
   forgotPassword,
