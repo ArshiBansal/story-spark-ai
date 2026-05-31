@@ -22,18 +22,17 @@ if (config.disable_logs) {
 
 async function connectDB() {
   if (mongoose.connection.readyState === 1) return;
-  const databaseUrl = config.database_url;
-  if (!databaseUrl) {
-    throw new Error(
-      "DATABASE_URL is not set. Define it in backend/.env before starting the server."
-    );
-  }
-  await mongoose.connect(databaseUrl);
+  // config.database_url is guaranteed non-empty by config/index.ts — it throws at
+  // module load time if DATABASE_URL is missing, so no runtime guard is needed here.
+  await mongoose.connect(config.database_url);
 }
 
 async function main() {
   try {
-    await connectDB();
+    await connectDB().catch((error) => {
+      logger.error("Error connecting to the database on startup:", error);
+    });
+
     const httpServer = http.createServer(app);
     const io = new Server(httpServer, {
       cors: {
@@ -63,7 +62,7 @@ async function main() {
           token,
           config.jwt.secret as Secret
         );
-        const userId = verifiedUser.userId || verifiedUser.sub || verifiedUser.id;
+        const userId = verifiedUser._id || verifiedUser.userId || verifiedUser.sub || verifiedUser.id;
         if (!userId) {
           return next(new Error("Unauthorized"));
         }
@@ -86,7 +85,7 @@ async function main() {
       logger.info(`Story-Spark-AI app listening on port ${config.port}`);
     });
   } catch (error) {
-    logger.error("Error connecting to the database:", error);
+    logger.error("Error in main startup sequence:", error);
   }
 }
 
