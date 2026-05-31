@@ -1,7 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { connectSocket, getSocketIo } from "../../socket/socket.oi";
+import { connectSocket } from "../../socket/socket.oi";
 import { getUserInfo, isLoggedIn } from "../../services/auth.service";
+
+interface CollabRoomCreatedPayload {
+  roomId?: string;
+}
+
+interface CollabRoomErrorPayload {
+  message?: string;
+}
+
+interface CollabNamespaceSocket {
+  once(event: "collab:room_created", listener: (response: CollabRoomCreatedPayload) => void): void;
+  once(event: "collab:error", listener: (data: CollabRoomErrorPayload) => void): void;
+  emit(event: "collab:create_room", payload: { userId?: string; username?: string }): void;
+}
+
+interface SocketManagerWithCollabNamespace {
+  of(namespace: "/collab"): CollabNamespaceSocket;
+}
 
 export default function CollabHome() {
   const navigate = useNavigate();
@@ -26,20 +44,29 @@ export default function CollabHome() {
         return;
       }
 
-      const collabSocket = socket.io.of("/collab");
+      const collabSocket = (socket.io as unknown as SocketManagerWithCollabNamespace).of("/collab");
 
-      collabSocket.emit(
-        "collab:create_room",
-        { userId: user?.userId, username: user?.name },
-        (response: any) => {
-          if (response && response.roomId) {
-            navigate(`/collab/${response.roomId}`);
-          } else {
-            setError("Failed to create room. Please try again.");
-          }
-          setIsCreating(false);
+      const handleRoomCreated = (response: CollabRoomCreatedPayload) => {
+        if (response && response.roomId) {
+          navigate(`/collab/${response.roomId}`);
+        } else {
+          setError("Failed to create room. Please try again.");
         }
-      );
+        setIsCreating(false);
+      };
+
+      const handleRoomCreateError = (data: CollabRoomErrorPayload) => {
+        setError(data?.message || "Failed to create room. Please try again.");
+        setIsCreating(false);
+      };
+
+      collabSocket.once("collab:room_created", handleRoomCreated);
+      collabSocket.once("collab:error", handleRoomCreateError);
+
+      collabSocket.emit("collab:create_room", {
+        userId: user?.userId,
+        username: user?.name,
+      });
     } catch (err) {
       console.error("Create room error:", err);
       setError("Error creating room. Please try again.");

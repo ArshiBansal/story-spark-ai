@@ -27,6 +27,37 @@ interface Room {
   createdAt: Date;
 }
 
+interface CollabRoomErrorPayload {
+  message?: string;
+}
+
+interface CollabRoomInfoPayload {
+  room?: Room;
+}
+
+interface CollabStoryUpdatedPayload {
+  story?: StoryChunk[];
+}
+
+interface CollabNamespaceSocket {
+  on(event: "collab:room_info", listener: (data: CollabRoomInfoPayload) => void): void;
+  on(event: "collab:error", listener: (data: CollabRoomErrorPayload) => void): void;
+  on(event: "collab:room_updated", listener: (data: CollabRoomInfoPayload) => void): void;
+  on(event: "collab:story_updated", listener: (data: CollabStoryUpdatedPayload) => void): void;
+  off(event: "collab:room_info", listener: (data: CollabRoomInfoPayload) => void): void;
+  off(event: "collab:error", listener: (data: CollabRoomErrorPayload) => void): void;
+  off(event: "collab:room_updated", listener: (data: CollabRoomInfoPayload) => void): void;
+  off(event: "collab:story_updated", listener: (data: CollabStoryUpdatedPayload) => void): void;
+  emit(event: "collab:join_room", payload: { roomId?: string }): void;
+  emit(event: "collab:get_room", payload: { roomId?: string }): void;
+  emit(event: "collab:add_text", payload: { roomId?: string; userId: string; text: string }): void;
+  emit(event: "collab:ai_continue", payload: { roomId?: string }): void;
+}
+
+interface SocketManagerWithCollabNamespace {
+  of(namespace: "/collab"): CollabNamespaceSocket;
+}
+
 export default function CollabRoom() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -51,27 +82,39 @@ export default function CollabRoom() {
       }
 
       // Connect to collab namespace
-      const collabSocket = socket.io.of("/collab");
+      const collabSocket = (socket.io as unknown as SocketManagerWithCollabNamespace).of("/collab");
 
-      // Request room info
-      collabSocket.emit("collab:get_room", { roomId }, (response: any) => {
-        if (response && response.room) {
-          setRoom(response.room);
+      const handleRoomInfo = (data: CollabRoomInfoPayload) => {
+        if (data && data.room) {
+          setRoom(data.room);
           setError(null);
         } else {
           setError("Room not found");
         }
         setLoading(false);
-      });
+      };
+
+      const handleRoomError = (data: CollabRoomErrorPayload) => {
+        setError(data?.message || "Room not found");
+        setLoading(false);
+      };
+
+      collabSocket.on("collab:room_info", handleRoomInfo);
+      collabSocket.on("collab:error", handleRoomError);
+
+      collabSocket.emit("collab:join_room", { roomId });
+
+      // Request room info
+      collabSocket.emit("collab:get_room", { roomId });
 
       // Listen for room updates
-      const handleRoomUpdated = (data: any) => {
+      const handleRoomUpdated = (data: CollabRoomInfoPayload) => {
         if (data && data.room) {
           setRoom(data.room);
         }
       };
 
-      const handleStoryUpdated = (data: any) => {
+      const handleStoryUpdated = (data: CollabStoryUpdatedPayload) => {
         if (data && data.story) {
           setRoom((prev) => (prev ? { ...prev, story: data.story } : null));
         }
@@ -79,14 +122,12 @@ export default function CollabRoom() {
 
       collabSocket.on("collab:room_updated", handleRoomUpdated);
       collabSocket.on("collab:story_updated", handleStoryUpdated);
-      collabSocket.on("collab:error", (data: any) => {
-        setError(data.message);
-        setLoading(false);
-      });
 
       return () => {
         collabSocket.off("collab:room_updated", handleRoomUpdated);
         collabSocket.off("collab:story_updated", handleStoryUpdated);
+        collabSocket.off("collab:room_info", handleRoomInfo);
+        collabSocket.off("collab:error", handleRoomError);
       };
     } catch (err) {
       console.error("Collab error:", err);
