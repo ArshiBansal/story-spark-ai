@@ -1,5 +1,5 @@
 import React from "react";
-
+import { Link } from "react-router-dom";
 type Props = {
   children: React.ReactNode;
   title: string;
@@ -12,11 +12,12 @@ const AuthLayout = ({ children, title, subtitle }: Props) => {
       
       {/* Left Branding Section */}
       <div className="bg-zinc-800 flex min-h-screen w-[35%] flex-col justify-center gap-8 p-8">
-        <a href="/">
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/apple-touch-icon.png" alt="StorySparkAI Logo" className="h-8 w-auto object-contain" />
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-purple-300 to-blue-400">
             StorySparkAI
           </h1>
-        </a>
+        </Link>
 
         <div>
           <h1 className="text-3xl text-gray-100 font-bold">{title}</h1>
