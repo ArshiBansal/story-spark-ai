@@ -24,6 +24,7 @@ export interface IStories {
   enhancedPrompt?: string;
   imageURL: string;
   language?: string;
+  genre?: string;
 }
 
 interface IPost extends IStories {
