@@ -389,7 +389,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   );
 };
 
-export default RelatedStoriesComponent;
+// RelatedStoriesComponent is used internally
 
 // ─── IStories interface ───────────────────────────────────────────────────────
 export interface IStories {
