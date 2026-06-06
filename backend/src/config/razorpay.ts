@@ -1,8 +1,5 @@
 import Razorpay from 'razorpay';
-
-
 let razorpayInstance: InstanceType<typeof Razorpay> | null = null;
-
 export function getRazorpay(): InstanceType<typeof Razorpay> {
   if (!razorpayInstance) {
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {

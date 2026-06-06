@@ -20,24 +20,6 @@ export const raceGenerationWithTimeout = async <T>(
   timeLimitMs: number
 ): Promise<T> => {
   const controller = new AbortController();
-
-  return new Promise<T>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      reject(new GenerationTimeoutError());
-    }, timeLimitMs);
-
-    operation(controller.signal)
-      .then((result) => {
-        clearTimeout(timeoutId);
-        controller.abort();
-        resolve(result);
-      })
-     export const raceGenerationWithTimeout = async <T>(
-  operation: (signal: AbortSignal) => Promise<T>,
-  timeLimitMs: number
-): Promise<T> => {
-  const controller = new AbortController();
   let timedOut = false;
 
   return new Promise<T>((resolve, reject) => {
@@ -61,8 +43,6 @@ export const raceGenerationWithTimeout = async <T>(
         }
 
         reject(error);
-              });
-          });
-        };
+      });
   });
 };
