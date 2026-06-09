@@ -1,3 +1,4 @@
+
 import ApiError from "../../../errors/api_error";
 import { ITokenPayload } from "../../../interfaces/token";
 import { User } from "../user/user.model";
@@ -14,6 +15,7 @@ import paginationHelper from "../../../utils/pagination_helper";
 import { postSearchFields } from "./post.constant";
 import { SortOrder, Types } from "mongoose";
 import { GamificationService } from "../gamification/gamification.service";
+import { sanitizeStoryPayload } from "../../../utils/sanitize.util";
 const MAX_SEARCH_TERM_LENGTH = 100;
 
 const escapeRegex = (text: string): string => {
@@ -103,8 +105,9 @@ const createPost = async (payload: IPostPayload, token: ITokenPayload) => {
   }
   try {
     const isPublished = payload.isPublished ?? true;
+    const sanitizedPayload = sanitizeStoryPayload(payload);
     const res = await Post.create({
-      ...payload,
+      ...sanitizedPayload,
       isPublished,
       publishedAt: isPublished ? new Date() : null,
       author: user._id,
@@ -470,10 +473,19 @@ const updatePost = async (
     payload.generationType || "edited"
   );
 
-  if (payload.title !== undefined) post.title = payload.title;
-  if (payload.content !== undefined) post.content = payload.content;
-  if (payload.tag !== undefined) post.tag = payload.tag;
+  const sanitizedPayload = sanitizeStoryPayload(
+    payload as { title?: string; content?: string; prompt?: string; tag?: string }
+  );
+
+  if (sanitizedPayload.title !== undefined) post.title = sanitizedPayload.title;
+  if (sanitizedPayload.content !== undefined) post.content = sanitizedPayload.content;
+  if ((sanitizedPayload as any).prompt !== undefined) (post as any).prompt = (sanitizedPayload as any).prompt;
+  if (sanitizedPayload.tag !== undefined) post.tag = sanitizedPayload.tag;
+  // === REPLACED BLOCK ENDS HERE ===
+
+  // Note: Keep this if you still want to update topic, as it was missing from the instructions snippet
   if (payload.topic !== undefined) post.topic = payload.topic;
+
 
   post.updatedBy = user._id;
   await post.save();
@@ -541,7 +553,10 @@ const remixStory = async (postId: string, prompt: string, token: ITokenPayload) 
     throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found!");
   }
 
-  const remixedContent = `[AI Remixed Version based on prompt: "${safePrompt}"]\n\n${originalPost.content}`;
+  // === MODIFIED LINE STARTS HERE ===
+  const sanitizedPrompt = sanitizeText(prompt);
+  const remixedContent = `[AI Remixed Version based on prompt: "${sanitizedPrompt}"]\n\n${sanitizeRichText(originalPost.content)}`;
+  // === MODIFIED LINE ENDS HERE ===
 
   const res = await Post.create({
     title: `Remix of ${originalPost.title}`,
@@ -579,7 +594,10 @@ const translateStory = async (postId: string, language: string, token: ITokenPay
     throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found!");
   }
 
-  const translatedContent = `[Translated to ${safeLanguage}]\n\n${originalPost.content}`;
+  // === MODIFIED LINE STARTS HERE ===
+  const sanitizedLanguage = sanitizeText(language);
+  const translatedContent = `[Translated to ${sanitizedLanguage}]\n\n${sanitizeRichText(originalPost.content)}`;
+  // === MODIFIED LINE ENDS HERE ===
 
   const res = await Post.create({
     title: `${originalPost.title} (${language})`,
@@ -598,27 +616,3 @@ const translateStory = async (postId: string, language: string, token: ITokenPay
 
   return res;
 };
-
-const getGenres = async (): Promise<string[]> => {
-  const genres = await Post.distinct("tag", { isDeleted: { $ne: true }, tag: { $nin: [null, ""] } });
-  return genres.sort();
-};
-
-
-export const PostService = {
-  createPost,
-  getPosts,
-  getPublishedPostsByAuthor,
-  getLatestPosts,
-  getFeaturedPosts,
-  doFeaturedPosts,
-  getSinglePost,
-  getPostsByTag,
-  toggleBookmark,
-  updatePost,
-  deletePost,
-  remixStory,
-  translateStory,
-  getGenres,
-};
-

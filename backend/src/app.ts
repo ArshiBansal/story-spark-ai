@@ -4,6 +4,7 @@ import express, {
   Request,
   Response,
 } from "express";
+import { sanitizeAllMiddleware } from "./app/middleware/sanitize.middleware";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
@@ -59,6 +60,9 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(cookieParser());
+// XSS sanitization — strip dangerous content from all requests
+app.use(sanitizeAllMiddleware);
 
 app.use((req, res, next) => {
   if (req.method === "GET" && /^\/api\/story\/[a-f0-9]{24}\/character-network$/i.test(req.path)) {
