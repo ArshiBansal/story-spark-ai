@@ -99,7 +99,7 @@ const LoginComponent = () => {
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="flex w-full max-w-5xl flex-row justify-center gap-16 py-12 relative z-10 box-border items-center">
+      <div className="flex w-full max-w-5xl flex-col lg:flex-row justify-center gap-16 py-12 relative z-10 box-border items-center min-w-0 overflow-hidden px-2">
         {/* Left side — feature highlights */}
         <div className="hidden lg:flex flex-col gap-5 max-w-sm">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-700 bg-clip-text text-transparent">
@@ -182,7 +182,7 @@ const LoginComponent = () => {
 
         {/* Right side — login form card */}
 
-        <div className="w-full max-w-md bg-slate-50 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl p-8 sm:p-10 shadow-2xl box-border overflow-hidden relative">
+        <div className="w-full max-w-md min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl p-8 sm:p-10 shadow-2xl box-border overflow-hidden relative">
           {/* Back to Home */}
           <button
             onClick={() => (window.location.href = "/")}
