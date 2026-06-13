@@ -260,9 +260,9 @@ const HeroSectionComponent = () => {
     const size = 8 + Math.floor(Math.random() * 8);
 
     setStars((prev) => {
-      const next = [...prev, { id, x, y, size }];
-      return next.slice(-18);
-    });
+  const next = [...prev, { id, x, y, size }];
+  return next.slice(-18);
+});
 
     const timerId = window.setTimeout(() => {
       setStars((prev) => prev.filter((star) => star.id !== id));
