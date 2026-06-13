@@ -423,6 +423,8 @@ interface ICharacter {
   personality: string;
 }
 
+const DRAFT_KEY = "story_spark_draft";
+
 const StoriesComponent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const storiesPerPage = 10;
@@ -432,7 +434,7 @@ const StoriesComponent = () => {
 
   const draft = useMemo(() => {
     try {
-      const saved = localStorage.getItem("story_spark_draft");
+      const saved = localStorage.getItem(DRAFT_KEY);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -449,6 +451,21 @@ const StoriesComponent = () => {
 
   const [selectedPrompt, setSelectedPrompt] = useState<string>("");
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [selectedGenre, setSelectedGenre] = useState<string>(
+  draft?.genre
+    ? (GENRES.find((g) => g.name === draft.genre || g.value === draft.genre)?.value ?? "ðŸ§™ Fantasy")
+    : "ðŸ§™ Fantasy",
+);
+  const [selectedLength, setSelectedLength] = useState<string>(draft?.length || "medium");
+  const [selectedTone, setSelectedTone] = useState<ToneLabel | "">(draft?.tone || "Dramatic");
+  const [textareaValue, setTextareaValue] = useState<string>(() => {
+    return location.state?.prompt || draft?.prompt || "";
+  });
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [selectedLength, setSelectedLength] = useState<string>("medium");
+  const [textareaValue, setTextareaValue] = useState<string>("");
+
+  
   const [selectedGenre, setSelectedGenre] = useState<string>(
     draft?.genre
       ? (GENRES.find((g) => g.name === draft.genre || g.value === draft.genre)?.value ?? "🧙 Fantasy")
@@ -501,6 +518,7 @@ const StoriesComponent = () => {
   );
   const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
   const [isRecentPromptsOpen, setIsRecentPromptsOpen] = useState<boolean>(false);
+  const [isHighLatency, setIsHighLatency] = useState<boolean>(false);
   const { recentPrompts, addPrompt, removePrompt, clearAll } = useRecentPrompts();
   
   const text = UI_TEXT[selectedLanguage] ?? UI_TEXT.English;
@@ -521,7 +539,7 @@ const StoriesComponent = () => {
         tone: selectedTone,
       };
       try {
-        localStorage.setItem("story_spark_draft", JSON.stringify(draftData));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
       } catch (err) {
         if (err instanceof DOMException && err.name === "QuotaExceededError") {
           toast.error("Couldn't autosave draft — storage limit reached.");
@@ -670,8 +688,10 @@ const StoriesComponent = () => {
 
     isGenerationInProgressRef.current = true;
     setLoading(true);
+    setIsHighLatency(false);
 
     let timeoutId: NodeJS.Timeout | null = null;
+    let latencyTimeoutId: NodeJS.Timeout | null = null;
 
     try {
       timeoutId = setTimeout(() => {
@@ -680,6 +700,13 @@ const StoriesComponent = () => {
           handleCancelGeneration(true);
         }
       }, 60000);
+
+      // 10-second high latency warning (for fallback/backoff cases)
+      latencyTimeoutId = setTimeout(() => {
+        if (isGenerationInProgressRef.current) {
+          setIsHighLatency(true);
+        }
+      }, 10000);
 
       const payload = {
         prompt: selectedGenre ? `[Genre: ${selectedGenre}] ${data.prompt}` : data.prompt,
@@ -699,7 +726,7 @@ const StoriesComponent = () => {
         setTextareaValue("");
         setSelectedPrompt("");
         setValue("prompt", "");
-        localStorage.removeItem("story_spark_draft");
+        // Clear draft after successful generation
         localStorage.removeItem(DRAFT_KEY);
         setDraftStatus("");
         reset();
@@ -724,9 +751,13 @@ const StoriesComponent = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      if (latencyTimeoutId) {
+        clearTimeout(latencyTimeoutId);
+      }
       activeGenerationRef.current = null;
       isGenerationInProgressRef.current = false;
       setLoading(false);
+      setIsHighLatency(false);
     }
   }, [
     login,
@@ -1343,7 +1374,7 @@ const StoriesComponent = () => {
         </div>
       )}
 
-      {loading && <StoryGeneratingAnimation onCancel={handleCancelGeneration} />}
+      {loading && <StoryGeneratingAnimation onCancel={handleCancelGeneration} isHighLatency={isHighLatency} />}
 
       {stories.length > 0 && (
         <div className="mb-6 bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 p-4 rounded-2xl">
