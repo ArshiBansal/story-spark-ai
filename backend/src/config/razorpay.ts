@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 
 let razorpayInstance: InstanceType<typeof Razorpay> | null = null;
 
+export const getRazorpay = (): InstanceType<typeof Razorpay> => {
 const getRazorpay = (): InstanceType<typeof Razorpay> => {
   if (!razorpayInstance) {
     razorpayInstance = new Razorpay({

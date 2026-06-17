@@ -8,9 +8,6 @@ let currentMode = 'signin';
 // ── Google Identity Services (GIS) Client ID ──
 const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.VITE_GOOGLE_CLIENT_ID) ? window.VITE_GOOGLE_CLIENT_ID : 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
 
-// API path prefix used by backend routes.
-const API_BASE_PATH = '/api/v1';
-
 let isSubmitting = false;
 
 /**
@@ -534,6 +531,7 @@ if (passwordField) {
   passwordField.addEventListener("keyup", (event) => {
     const loginCapsWarning = document.getElementById("login-caps-lock-warning");
     const signupCapsWarning = document.getElementById("signup-caps-lock-warning");
+    const confirmCapsWarning = document.getElementById("confirm-caps-lock-warning");
 
     const isCapsLockOn = event.getModifierState("CapsLock");
 
@@ -543,6 +541,9 @@ if (passwordField) {
 
     if (signupCapsWarning) {
       signupCapsWarning.classList.toggle("hidden", !isCapsLockOn);
+    }
+    if (confirmCapsWarning) {
+      confirmCapsWarning.classList.toggle("hidden", !isCapsLockOn);
     }
   });
 }
@@ -585,9 +586,7 @@ async function handleFormSubmit(e) {
     setAlert('info', currentMode === 'signup' ? 'Creating your account…' : 'Signing you in…');
 
     try {
-        const endpoint = currentMode === 'signup'
-            ? `${API_BASE_PATH}/auth/register`
-            : `${API_BASE_PATH}/auth/login`;
+        const endpoint = currentMode === 'signup' ? '/api/v1/auth/register' : '/api/v1/auth/login';
         const body = currentMode === 'signup'
             ? { email, name, password }
             : { email, password, rememberMe };
@@ -697,7 +696,7 @@ function decodeJwt(token) {
 
 async function handleGoogleCredentialResponse(response) {
     try {
-        const res = await fetch(`${API_BASE_PATH}/auth/google-login`, {
+        const res = await fetch('/api/v1/auth/google-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: response.credential }),
