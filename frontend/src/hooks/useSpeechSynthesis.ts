@@ -186,7 +186,11 @@ export const useSpeechSynthesis = (
     () => toVoiceOptions(filterVoicesByGender(browserVoices, voiceGender)),
     [browserVoices, voiceGender],
   );
-
+  useEffect(() => {
+  if (voices.length > 0) {
+    setSelectedVoiceId(voices[0].id);
+  }
+}, [voiceGender, voices]);
   const languageOptions = useMemo<LanguageOption[]>(() => {
     const counts = new Map<string, number>();
     for (const voice of voices) {
@@ -320,12 +324,17 @@ export const useSpeechSynthesis = (
       utterance.rate = rate;
       utterance.pitch = 1;
       utterance.volume = 1;
+     const selectedVoice = filterVoicesByGender(
+       availableVoices,
+       voiceGender
+     ).find(
+      (voice) => getVoiceId(voice) === selectedVoiceId
+);
 
-      const selectedVoice = availableVoices[selectedVoiceIndex];
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-
+if (selectedVoice) {
+  utterance.voice = selectedVoice;
+  utterance.lang = selectedVoice.lang;
+}
       utterance.onstart = () => {
         setIsSpeaking(true);
         setIsPaused(false);
@@ -376,7 +385,7 @@ export const useSpeechSynthesis = (
       synthRef.current.speak(utterance);
       setCurrentWordIndex(0);
     },
-    [availableVoices, isSupported, rate, selectedVoiceIndex, stop],
+    [availableVoices, isSupported, rate, selectedVoiceId, stop],
   );
 
   const setPitch = useCallback((nextPitch: number) => {
