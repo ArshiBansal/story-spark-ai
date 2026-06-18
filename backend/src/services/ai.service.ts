@@ -8,8 +8,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 let openai: OpenAI | null = null;
 let genAI: GoogleGenerativeAI | null = null;
+let anthropic: Anthropic | null = null;
 
-function getGeminiClient(): GoogleGenerativeAI {
+export function getGeminiClient(): GoogleGenerativeAI {
   if (!genAI) {
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
@@ -19,9 +20,6 @@ function getGeminiClient(): GoogleGenerativeAI {
   }
   return genAI;
 }
-
-let anthropic: Anthropic | null = null;
-const genAI  = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export function getOpenAIClient(): OpenAI {
   if (!openai) {
@@ -47,7 +45,7 @@ export function getAnthropicClient(): Anthropic {
 
 export const GEMINI_MODEL = "gemini-2.5-flash";
 export const CLAUDE_MODEL = "claude-3-5-sonnet-20241022";
-export const OPENAI_MODEL = "gpt-4o-mini"; // Note: gpt-4 doesn't support response_format natively as well as 4o/4o-mini
+export const OPENAI_MODEL = "gpt-4o-mini"; 
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -102,8 +100,10 @@ async function generateWithAnthropic(systemPrompt: string, userPrompt: string): 
 // ─── Gemini call ─────────────────────────────────────────────────────────────
 
 async function generateWithGemini(systemPrompt: string, userPrompt: string): Promise<string> {
+  const client = getGeminiClient();
+  
   // Use systemInstruction for gemini-2.5 models
-  const model  = genAI.getGenerativeModel({ 
+  const model = client.getGenerativeModel({ 
     model: GEMINI_MODEL,
     systemInstruction: systemPrompt 
   });
@@ -115,12 +115,12 @@ async function generateWithGemini(systemPrompt: string, userPrompt: string): Pro
     }
   });
   
-  const text   = result.response.text();
+  const text = result.response.text();
   if (!text) throw new Error("Gemini returned an empty response");
   return text;
 }
 
-// ─── Helper: is this error worth falling back on? ────────────────────────────
+// ─── Helper ────────────────────────────
 
 function isRetryableError(error: unknown): boolean {
   if (!(error instanceof Error)) return true;
@@ -135,7 +135,7 @@ function isRetryableError(error: unknown): boolean {
       msg.includes("500"))             return true;
   if (msg.includes("empty response"))  return true;
 
-  // Bad API key → don't bother falling back (won't help)
+  // Bad API key -> don't bother with fallback since it won't help
   if (msg.includes("401") ||
       msg.includes("invalid api key")) return false;
 
@@ -149,10 +149,10 @@ export async function generateStory(
   provider?: string, 
   options?: PromptOptions
 ): Promise<AIResponse> {
-  // ── SECURITY LAYER: Validate and wrap input ─────────────────────────
+  // ── Security layer: validate and wrap input ─────────────────────────
   const securePrompt = validateAndFormatPrompt(prompt);
 
-  // ── PROMPT BUILDER: Transform into structured AI instructions ───────
+  // ── Prompt builder: morph into structured AI instructions ───────
   const { systemPrompt, userPrompt } = buildStoryPrompt(securePrompt, options);
 
   const chosenProvider = provider?.toLowerCase();
@@ -162,7 +162,7 @@ export async function generateStory(
     // ── Try Anthropic first ──────────────────────────────────────────────────
     try {
       let story = await generateWithAnthropic(systemPrompt, userPrompt);
-      story = validateOutput(story); // SECURITY LAYER: Validate output
+      story = validateOutput(story); // Security layer: validate output
       console.log("[AI] Story generated successfully via Anthropic");
       return { story, provider: "anthropic", fallbackUsed: false };
     } catch (anthropicError) {
@@ -183,7 +183,7 @@ export async function generateStory(
     // ── Try OpenAI first ──────────────────────────────────────────────────────
     try {
       let story = await generateWithOpenAI(systemPrompt, userPrompt);
-      story = validateOutput(story); // SECURITY LAYER: Validate output
+      story = validateOutput(story); // Security layer: validate output
       console.log("[AI] Story generated successfully via OpenAI");
 
       return { story, provider: "openai", fallbackUsed: false };
@@ -202,7 +202,7 @@ export async function generateStory(
       }
 
       didFallbackToGemini = true;
-      console.log("[AI] Falling back to Gemini...");
+      console.log("[AI] Falling back to Gemini.");
     }
   } else if (chosenProvider === "gemini") {
     // Skip OpenAI/Anthropic blocks
@@ -214,14 +214,14 @@ export async function generateStory(
   // ── Try Gemini as fallback / direct ───────────────────────────────────────
   try {
     let story = await generateWithGemini(systemPrompt, userPrompt);
-    story = validateOutput(story); // SECURITY LAYER: Validate output
+    story = validateOutput(story); // Security layer: validate output
     console.log(`[AI] Story generated successfully via Gemini (${didFallbackToGemini ? "fallback" : "direct"})`);
 
     return { story, provider: "gemini", fallbackUsed: didFallbackToGemini };
 
   } catch (geminiError) {
     console.error(
-      "[AI] Gemini also failed:",
+      "[AI] Gemini also failed.",
       geminiError instanceof Error ? geminiError.message : geminiError
     );
 
