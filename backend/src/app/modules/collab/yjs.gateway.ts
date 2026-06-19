@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
 import { debounce } from 'lodash';
-import { StoryService } from '../../story/story.service';
+import { CollabService } from './collab.service';
 
 /**
  * Yjs gateway that syncs a Yjs document over a Socket.io namespace
@@ -30,7 +30,7 @@ export class YjsGateway {
         doc = new Y.Doc();
         this.docs.set(storyId, doc);
         // Load persisted state if any
-        StoryService.getCollabState(storyId).then(state => {
+        CollabService.getCollabState(storyId).then(state => {
           if (state) {
             const update = Uint8Array.from(Buffer.from(state, 'base64'));
             Y.applyUpdate(doc!, update);
@@ -62,7 +62,7 @@ export class YjsGateway {
       const fn = debounce(() => {
         const update = Y.encodeStateAsUpdate(doc);
         const base64 = Buffer.from(update).toString('base64');
-        StoryService.updateCollabState(storyId, base64);
+        CollabService.updateCollabState(storyId, base64);
       }, this.saveDelay);
       this.debouncedSaves.set(storyId, fn);
     }

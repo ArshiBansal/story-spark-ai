@@ -58,7 +58,8 @@
     "yjs": "^13.6.31",
     "y-quill": "^1.2.0",
     "y-indexeddb": "^1.0.5",
-    "y-protocols": "^1.0.6"
+    "y-protocols": "^1.0.6",
+    "quill-cursors": "^4.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
