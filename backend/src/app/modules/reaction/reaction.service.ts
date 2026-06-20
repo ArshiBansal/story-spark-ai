@@ -6,13 +6,20 @@ import { Reaction } from "./reaction.model";
 import { Types } from "mongoose";
 import { Post } from "../post/post.model";
 
+type ReactionType = "like" | "love" | "laugh" | "angry" | "sad";
+
 const toggleReaction = async (
   postId: string,
-  type: string = "like",
+  type: ReactionType = "like",
   token: ITokenPayload
 ) => {
   const { email } = token;
-  const user = await User.findOne({ email });
+
+  if (!Types.ObjectId.isValid(postId)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid post ID!");
+  }
+
+  const user = await User.findOne({ email }).select("_id").lean();
   if (!user) {
     throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
   }
@@ -52,7 +59,7 @@ const toggleReaction = async (
     const newReaction = await Reaction.create({
       postId: new Types.ObjectId(postId),
       userId: user._id,
-      type: type,
+      type,
     });
     const updatedPost = await Post.findOneAndUpdate(
       { _id: postId },
@@ -67,6 +74,13 @@ const toggleReaction = async (
       likesCount: updatedPost?.likesCount ?? 0,
     };
   }
+
+  const likesCount = await Reaction.countDocuments({ postId });
+
+  return {
+    message: "Reaction updated successfully",
+    likesCount,
+  };
 };
 
 export const ReactionService = {
